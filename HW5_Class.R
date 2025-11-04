@@ -22,9 +22,6 @@ setValidity(Class = "sparse_numeric",
                 return("A number has a greater position value than the actual space")
               if(any(object@pos < 1))
                 return("A number has an invalid position")
-              if (length(object@value) == 0 || any(is.na(object@value))) {
-                return("Slot 'value' is empty or contains NA values")
-              }
               TRUE
             })
 #-------------------------------------------------------------------------------
@@ -66,7 +63,9 @@ setGeneric("sparse_add", function(x, y) standardGeneric("sparse_add"))
 setMethod("sparse_add", 
           signature(x = "sparse_numeric", y = "sparse_numeric"),
           function(x, y) {
-            
+            if(x@length != y@length){
+              stop("Length of vectors do not match")
+            } 
             double_pos <- intersect(x@pos, y@pos)
             
             x_vals_match <- x@value[x@pos %in% double_pos]
@@ -96,21 +95,25 @@ setGeneric("sparse_mult", function(x, y) standardGeneric("sparse_mult"))
 setMethod("sparse_mult", 
           signature(x = "sparse_numeric", y = "sparse_numeric"),
             function(x, y){
-            double_pos <- intersect(x@pos, y@pos)
-            
-            # Find matching indices in each object
-            x_vals <- x@value[x@pos %in% double_pos]
-            y_vals <- y@value[y@pos %in% double_pos]
-            
-            # Multiply the values where positions match
-            prod_vals <- x_vals * y_vals
-            
-            # Construct new sparse_numeric
-            new("sparse_numeric", 
-                value = prod_vals,
-                pos = double_pos,
-                length = max(x@length, y@length))
-          })
+            if(x@length != y@length){
+              stop("Length of vectors do not match")
+            } 
+            else{
+              double_pos <- intersect(x@pos, y@pos)
+              
+              # Find matching indices in each object
+              x_vals <- x@value[x@pos %in% double_pos]
+              y_vals <- y@value[y@pos %in% double_pos]
+              
+              # Multiply the values where positions match
+              prod_vals <- x_vals * y_vals
+              
+              # Construct new sparse_numeric
+              new("sparse_numeric", 
+                  value = prod_vals,
+                  pos = double_pos,
+                  length = max(x@length, y@length))
+          }})
 
 #-------------------------------------------------------------------------------
 
@@ -136,14 +139,18 @@ setMethod("sparse_sub",
             # dd the values where positions match
             sub_vals <- x_vals_match - y_vals_match
             invalid_vals = c()
-            for (val in 1:length(sub_vals)){
-              if (sub_vals[val] == 0){
-                invalid_vals = append(invalid_vals, val)
-              }
-                
+            if(length(sub_vals) != 0){
+              for (val in 1:length(sub_vals)){
+                if (sub_vals[val] == 0){
+                  invalid_vals = append(invalid_vals, val)
+                }
             }
-            sub_vals = sub_vals[-invalid_vals]
-            double_pos = double_pos[-invalid_vals]
+              
+            }
+            if(length(invalid_vals) != 0){
+              sub_vals = sub_vals[-invalid_vals]
+              double_pos = double_pos[-invalid_vals]
+            }
             
             #append values that don't have matches
             sub_vals <- c(sub_vals, x_values_no_match, y_values_no_match)
