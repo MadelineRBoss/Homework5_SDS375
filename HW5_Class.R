@@ -22,6 +22,8 @@ setValidity(Class = "sparse_numeric",
                 return("A number has a greater position value than the actual space")
               if(any(object@pos < 1))
                 return("A number has an invalid position")
+              if(any(object@value == 0))
+                return("A value position is 0")
               TRUE
             })
 #-------------------------------------------------------------------------------
